@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultAI | Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #020617; color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .sidebar { background: rgba(0,0,0,0.3); backdrop-filter: blur(20px); border-right: 1px solid rgba(255,255,255,0.1); }
+        .glass-card { background: rgba(255,255,255,0.04); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 24px; }
+        input, select { background: rgba(255,255,255,0.05)!important; border: 1px solid rgba(255,255,255,0.1)!important; color: white!important; }
+        
+        /* FINAL POLISH: CHART ANIMATION */
+        canvas { 
+            max-width: 100% !important; 
+            height: auto !important; 
+            animation: fadeIn 1.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .magic-btn {
+            background: linear-gradient(90deg, #9333ea, #06b6d4);
+            transition: all 0.3s ease;
+        }
+        .magic-btn:hover {
+            filter: brightness(1.2);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+        }
+    </style>
+</head>
+<body class="flex flex-col lg:flex-row min-h-screen">
+
+    <aside class="w-full lg:w-80 sidebar p-8 space-y-6 shrink-0">
+        <h2 class="text-xl font-black italic text-cyan-400">Student Profile</h2>
+        
+        <div>
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Monthly Allowance (₹)</label>
+            <input type="number" id="allowance" value="15000" class="w-full p-3 rounded-xl mt-1 outline-none">
+        </div>
+
+        <div>
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Food Orders: <span id="foodVal" class="text-cyan-400 font-bold">10</span></label>
+            <input type="range" id="foodFreq" min="0" max="40" value="10" class="w-full accent-cyan-400 cursor-pointer">
+        </div>
+
+        <div class="flex items-center justify-between p-2">
+            <span class="text-sm font-semibold">Exam Season 📚</span>
+            <input type="checkbox" id="isExam" class="w-5 h-5 accent-cyan-400">
+        </div>
+
+        <div>
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Primary Transport</label>
+            <select id="transport" class="w-full p-3 rounded-xl mt-1 outline-none">
+                <option value="0">Walking/Cycle</option>
+                <option value="1200">Public Transport</option>
+                <option value="4000">Auto/Cab</option>
+            </select>
+        </div>
+
+        <div class="pt-4 border-t border-white/5">
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Savings Goal</label>
+            <input type="text" id="goalName" value="New Smartphone" class="w-full p-3 rounded-xl mt-1 mb-2 outline-none">
+            <input type="number" id="goalAmount" value="20000" class="w-full p-3 rounded-xl outline-none">
+        </div>
+
+        <button onclick="update()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95">Update Vault</button>
+    </aside>
+
+    <main class="flex-1 p-6 lg:p-12 overflow-y-auto">
+        <header class="mb-10 flex justify-between items-start">
+            <div>
+                <h1 class="text-4xl font-black tracking-tighter">VaultAI Dashboard</h1>
+                <p class="text-slate-500 italic mt-1">Active Session: <span id="displayUser" class="text-cyan-400">Student</span></p>
+            </div>
+            <button onclick="logout()" class="bg-white/5 px-4 py-2 rounded-lg text-xs font-bold hover:bg-white/10 text-red-400 transition-all">Logout</button>
+        </header>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <div class="glass-card"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Projected Spent</p><p id="m-spent" class="text-2xl font-black text-cyan-400">₹0</p></div>
+            <div class="glass-card"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Safe Daily Cap</p><p id="m-daily" class="text-2xl font-black text-cyan-400">₹0</p></div>
+            <div class="glass-card"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Health Status</p><p id="m-health" class="text-2xl font-black text-emerald-400">Healthy</p></div>
+            <div class="glass-card"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Goal Progress</p><p id="m-progress" class="text-2xl font-black text-cyan-400">0%</p></div>
+        </div>
+
+        <div class="glass-card mb-10 border-l-4 border-cyan-500">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-bold mb-3 flex items-center gap-2 text-cyan-400">🤖 AI Action Plan</h3>
+                    <div id="ai-insight" class="text-slate-300 leading-relaxed text-sm">Initializing analysis...</div>
+                </div>
+                <button onclick="runAIOptimizer()" class="magic-btn shrink-0 flex items-center gap-2 text-white text-xs font-black py-3 px-6 rounded-full shadow-lg transition-all active:scale-95">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                    OPTIMIZE MY LIFE
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div class="glass-card flex flex-col items-center">
+                <h3 class="text-xs font-bold text-slate-500 uppercase mb-8 tracking-widest">Allocation Donut</h3>
+                <div class="relative w-full max-w-[280px]">
+                    <canvas id="donutChart"></canvas>
+                </div>
+            </div>
+            <div class="glass-card">
+                <h3 class="text-xs font-bold text-slate-500 uppercase mb-8 tracking-widest">Expense Comparison</h3>
+                <div class="w-full h-64">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- 1. GATEKEEPER LOGIC ---
+        (function() {
+            if (localStorage.getItem('vaultAuth') !== 'true') {
+                window.location.href = 'index.html';
+            }
+        })();
+
+        // --- 2. LOGOUT LOGIC ---
+        function logout() {
+            localStorage.removeItem('vaultAuth');
+            localStorage.removeItem('vaultUser');
+            localStorage.removeItem('userFinancials');
+            window.location.href = 'index.html';
+        }
+
+        let myD = null;
+        let myB = null;
+
+        document.getElementById('foodFreq').oninput = function() {
+            document.getElementById('foodVal').innerText = this.value;
+            update();
+        }
+
+        // MAGIC WAND OPTIMIZER LOGIC
+        function runAIOptimizer() {
+            const goalAmount = parseFloat(document.getElementById('goalAmount').value);
+            const allowance = parseFloat(document.getElementById('allowance').value);
+            const targetMonthlySavings = goalAmount / 4; 
+            
+            const transportSelect = document.getElementById('transport');
+            if (transportSelect.value === "4000") {
+                transportSelect.value = "1200";
+            }
+
+            const currentTransport = parseFloat(transportSelect.value);
+            const availableForFood = allowance - 6000 - currentTransport - targetMonthlySavings;
+            const maxOrders = Math.floor(Math.max(0, availableForFood / 250));
+
+            const foodSlider = document.getElementById('foodFreq');
+            foodSlider.value = Math.min(foodSlider.value, maxOrders);
+            
+            update();
+            
+            const insightBox = document.getElementById('ai-insight');
+            insightBox.innerHTML = `
+                <div class="bg-cyan-500/10 p-3 rounded-xl border border-cyan-500/30 animate-pulse">
+                    <span class="text-cyan-400 font-bold">✨ AI Optimization Applied:</span><br>
+                    I've adjusted your commute to <b>Public Transport</b> and capped orders at <b>${maxOrders}</b>. 
+                    At this rate, you'll reach your goal for <b>${document.getElementById('goalName').value}</b> in 4 months!
+                </div>
+            `;
+        }
+
+        function update() {
+            const loggedInUser = localStorage.getItem('vaultUser') || "Student";
+            document.getElementById('displayUser').innerText = loggedInUser;
+
+            const allowance = parseFloat(document.getElementById('allowance').value) || 0;
+            const foodOrders = parseFloat(document.getElementById('foodFreq').value);
+            const foodCost = foodOrders * 250;
+            const isExam = document.getElementById('isExam').checked;
+            const examPenalty = isExam ? 1500 : 0;
+            const transport = parseFloat(document.getElementById('transport').value);
+            const goalAmount = parseFloat(document.getElementById('goalAmount').value) || 1;
+            
+            const fixedExpenses = 6000;
+            const totalSpent = fixedExpenses + foodCost + transport + examPenalty;
+            const savings = Math.max(0, allowance - totalSpent);
+
+            document.getElementById('foodVal').innerText = foodOrders;
+            document.getElementById('m-spent').innerText = `₹${totalSpent.toLocaleString()}`;
+            document.getElementById('m-daily').innerText = `₹${Math.floor(Math.max(0, (allowance - fixedExpenses - transport)/30))}`;
+            
+            const healthStatus = savings > (allowance * 0.15) ? "Healthy ✅" : "Critical ⚠️";
+            const healthEl = document.getElementById('m-health');
+            healthEl.innerText = healthStatus;
+            healthEl.style.color = savings > (allowance * 0.15) ? "#34d399" : "#fb7185";
+
+            const progress = Math.min(100, Math.floor((savings / (goalAmount/6)) * 100));
+            document.getElementById('m-progress').innerText = `${progress}%`;
+
+            let insightText = "";
+            if(totalSpent > allowance) {
+                insightText = `<b>Alert:</b> Overspending by ₹${(totalSpent - allowance).toLocaleString()}. Reduce orders to ${Math.max(0, foodOrders-5)} to save ₹1,250.`;
+            } else if(isExam) {
+                insightText = `<b>Exam Season:</b> ₹1,500 buffer added for late-night snacks. Avoid extra transport to stay on track.`;
+            } else {
+                insightText = `<b>Looking Good!</b> Monthly surplus: ₹${savings.toLocaleString()}. Goal reached in ${Math.ceil(goalAmount/Math.max(1, savings))} months.`;
+            }
+            // Only update if optimizer didn't just write a message
+            if(!document.querySelector('.animate-pulse')) {
+                document.getElementById('ai-insight').innerHTML = insightText;
+            }
+
+            const ctxD = document.getElementById('donutChart');
+            const ctxB = document.getElementById('barChart');
+
+            if (myD) myD.destroy();
+            if (myB) myB.destroy();
+
+            const labels = ['Fixed', 'Food', 'Transport', 'Exam', 'Savings'];
+            const dataValues = [fixedExpenses, foodCost, transport, examPenalty, savings];
+
+            myD = new Chart(ctxD, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: ['#1e3a8a', '#1d4ed8', '#3b82f6', '#93c5fd', '#00d4ff'],
+                        borderWidth: 0,
+                        hoverOffset: 15
+                    }]
+                },
+                options: { cutout: '80%', plugins: { legend: { display: false } }, responsive: true }
+            });
+
+            myB = new Chart(ctxB, {
+                type: 'bar',
+                data: {
+                    labels: labels.slice(0, 4),
+                    datasets: [{
+                        label: 'Cost (₹)',
+                        data: dataValues.slice(0, 4),
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b' } }
+                    }
+                }
+            });
+
+            // DATA PERSISTENCE
+            const userData = {
+                allowance: document.getElementById('allowance').value,
+                food: document.getElementById('foodFreq').value,
+                exam: document.getElementById('isExam').checked,
+                transport: document.getElementById('transport').value,
+                goalName: document.getElementById('goalName').value,
+                goalAmount: document.getElementById('goalAmount').value
+            };
+            localStorage.setItem('userFinancials', JSON.stringify(userData));
+        }
+
+        // LOAD PERSISTED DATA
+        window.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('userFinancials');
+            if(saved) {
+                const data = JSON.parse(saved);
+                document.getElementById('allowance').value = data.allowance;
+                document.getElementById('foodFreq').value = data.food;
+                document.getElementById('isExam').checked = data.exam;
+                document.getElementById('transport').value = data.transport;
+                document.getElementById('goalName').value = data.goalName;
+                document.getElementById('goalAmount').value = data.goalAmount;
+            }
+            update();
+        });
+    </script>
+</body>
+</html>

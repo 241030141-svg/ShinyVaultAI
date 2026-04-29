@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultAI | Secure Entry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: radial-gradient(circle at 20% 30%, #1e1b4b 0%, #020617 100%);
+            color: white; font-family: 'Inter', sans-serif;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="glass p-12 rounded-[40px] w-full max-w-lg text-center mx-4">
+        <div class="flex justify-center mb-6">
+            <div class="bg-cyan-500/20 p-5 rounded-3xl">
+                <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+            </div>
+        </div>
+        <h1 class="text-4xl font-black mb-2 tracking-tight">VaultAI Student Manager</h1>
+        <p class="text-slate-400 mb-10 text-sm tracking-widest uppercase">Financial Intelligence 2026</p>
+        
+        <div class="text-left space-y-4">
+            <input type="text" id="uniID" placeholder="University ID" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl outline-none focus:border-cyan-400">
+            <input type="password" id="vaultKey" placeholder="Vault Key" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl outline-none focus:border-cyan-400">
+        </div>
+
+        <button onclick="handleLogin()" class="w-full mt-10 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-black py-4 rounded-2xl shadow-lg shadow-cyan-500/20 transition-all">
+            Secure Entry
+        </button>
+    </div>
+
+    <script>
+        function handleLogin() {
+            const id = document.getElementById('uniID').value;
+            const key = document.getElementById('vaultKey').value;
+
+            // Simple Logic: If inputs match, save session and go to dashboard
+            if (id === "STU-2026" && key === "vault123") {
+                localStorage.setItem('vaultAuth', 'true');
+                localStorage.setItem('vaultUser', id);
+                window.location.href = 'dashboard.html';
+            } else {
+                alert("Invalid Credentials! \nHint: ID is STU-2026, Key is vault123");
+            }
+        }
+
+        // Allow pressing "Enter" key to login
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        });
+    </script>
+</body>
+</html>
