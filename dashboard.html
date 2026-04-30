@@ -142,19 +142,37 @@
         }
 
         // MAGIC WAND OPTIMIZER LOGIC
-        function runAIOptimizer() {
-            const goalAmount = parseFloat(document.getElementById('goalAmount').value);
-            const allowance = parseFloat(document.getElementById('allowance').value);
-            const targetMonthlySavings = goalAmount / 4; 
-            
-            const transportSelect = document.getElementById('transport');
-            if (transportSelect.value === "4000") {
-                transportSelect.value = "1200";
-            }
+function runAIOptimizer() {
+    const goalAmount = parseFloat(document.getElementById('goalAmount').value);
+    const allowance = parseFloat(document.getElementById('allowance').value);
+    
+    // Step 1: Force cheapest Transport
+    const transportSelect = document.getElementById('transport');
+    transportSelect.value = "0"; // Force Walking/Cycle for maximum savings
 
-            const currentTransport = parseFloat(transportSelect.value);
-            const availableForFood = allowance - 6000 - currentTransport - targetMonthlySavings;
-            const maxOrders = Math.floor(Math.max(0, availableForFood / 250));
+    // Step 2: Turn off Exam Season (remove the penalty)
+    document.getElementById('isExam').checked = false;
+
+    // Step 3: Calculate remaining room for food
+    const fixedExpenses = allowance * 0.3;
+    const targetSavings = allowance * 0.2; // Aim for at least 20% savings
+    const availableForFood = allowance - fixedExpenses - targetSavings;
+    
+    const foodSlider = document.getElementById('foodFreq');
+    const maxOrders = Math.floor(Math.max(0, availableForFood / 250));
+    foodSlider.value = maxOrders;
+    
+    update();
+    
+    const insightBox = document.getElementById('ai-insight');
+    insightBox.innerHTML = `
+        <div class="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/30 animate-pulse">
+            <span class="text-emerald-400 font-bold">✨ Emergency Optimization:</span><br>
+            I've switched you to <b>Walking</b> and limited orders to <b>${maxOrders}</b>. 
+            Your health status is now stabilized!
+        </div>
+    `;
+}
 
             const foodSlider = document.getElementById('foodFreq');
             foodSlider.value = Math.min(foodSlider.value, maxOrders);
@@ -183,7 +201,7 @@
             const transport = parseFloat(document.getElementById('transport').value);
             const goalAmount = parseFloat(document.getElementById('goalAmount').value) || 1;
             
-            const fixedExpenses = 6000;
+            const fixedExpenses = allowance * 0.3; 
             const totalSpent = fixedExpenses + foodCost + transport + examPenalty;
             const savings = Math.max(0, allowance - totalSpent);
 
