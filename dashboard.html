@@ -12,7 +12,6 @@
         .glass-card { background: rgba(255,255,255,0.04); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 24px; }
         input, select { background: rgba(255,255,255,0.05)!important; border: 1px solid rgba(255,255,255,0.1)!important; color: white!important; }
         
-        /* FINAL POLISH: CHART ANIMATION */
         canvas { 
             max-width: 100% !important; 
             height: auto !important; 
@@ -118,14 +117,12 @@
     </main>
 
     <script>
-        // --- 1. GATEKEEPER LOGIC ---
         (function() {
             if (localStorage.getItem('vaultAuth') !== 'true') {
                 window.location.href = 'index.html';
             }
         })();
 
-        // --- 2. LOGOUT LOGIC ---
         function logout() {
             localStorage.removeItem('vaultAuth');
             localStorage.removeItem('vaultUser');
@@ -141,50 +138,33 @@
             update();
         }
 
-        // MAGIC WAND OPTIMIZER LOGIC
-function runAIOptimizer() {
-    const goalAmount = parseFloat(document.getElementById('goalAmount').value);
-    const allowance = parseFloat(document.getElementById('allowance').value);
-    
-    // Step 1: Force cheapest Transport
-    const transportSelect = document.getElementById('transport');
-    transportSelect.value = "0"; // Force Walking/Cycle for maximum savings
+        // IMPROVED OPTIMIZER LOGIC
+        function runAIOptimizer() {
+            const allowance = parseFloat(document.getElementById('allowance').value);
+            
+            // 1. Force Walking (₹0)
+            document.getElementById('transport').value = "0";
 
-    // Step 2: Turn off Exam Season (remove the penalty)
-    document.getElementById('isExam').checked = false;
+            // 2. Turn off Exam Season buffer
+            document.getElementById('isExam').checked = false;
 
-    // Step 3: Calculate remaining room for food
-    const fixedExpenses = allowance * 0.3;
-    const targetSavings = allowance * 0.2; // Aim for at least 20% savings
-    const availableForFood = allowance - fixedExpenses - targetSavings;
-    
-    const foodSlider = document.getElementById('foodFreq');
-    const maxOrders = Math.floor(Math.max(0, availableForFood / 250));
-    foodSlider.value = maxOrders;
-    
-    update();
-    
-    const insightBox = document.getElementById('ai-insight');
-    insightBox.innerHTML = `
-        <div class="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/30 animate-pulse">
-            <span class="text-emerald-400 font-bold">✨ Emergency Optimization:</span><br>
-            I've switched you to <b>Walking</b> and limited orders to <b>${maxOrders}</b>. 
-            Your health status is now stabilized!
-        </div>
-    `;
-}
-
+            // 3. Force Food Orders to a safe level (leaves 10% room for health status)
+            const fixedExpenses = allowance * 0.3;
+            const targetSafetyBuffer = allowance * 0.1;
+            const availableForFood = allowance - fixedExpenses - targetSafetyBuffer;
+            
             const foodSlider = document.getElementById('foodFreq');
-            foodSlider.value = Math.min(foodSlider.value, maxOrders);
+            const maxOrders = Math.floor(Math.max(0, availableForFood / 250));
+            foodSlider.value = maxOrders;
             
             update();
             
             const insightBox = document.getElementById('ai-insight');
             insightBox.innerHTML = `
-                <div class="bg-cyan-500/10 p-3 rounded-xl border border-cyan-500/30 animate-pulse">
-                    <span class="text-cyan-400 font-bold">✨ AI Optimization Applied:</span><br>
-                    I've adjusted your commute to <b>Public Transport</b> and capped orders at <b>${maxOrders}</b>. 
-                    At this rate, you'll reach your goal for <b>${document.getElementById('goalName').value}</b> in 4 months!
+                <div class="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/30 animate-pulse">
+                    <span class="text-emerald-400 font-bold">✨ AI Optimization Applied:</span><br>
+                    I've switched you to <b>Walking</b> and capped orders at <b>${maxOrders}</b> to fix your budget. 
+                    Health Status: <b class="text-emerald-400">Recovered ✅</b>
                 </div>
             `;
         }
@@ -201,42 +181,45 @@ function runAIOptimizer() {
             const transport = parseFloat(document.getElementById('transport').value);
             const goalAmount = parseFloat(document.getElementById('goalAmount').value) || 1;
             
-            const fixedExpenses = allowance * 0.3; 
+            // DYNAMIC FIXED COSTS (30%)
+            const fixedExpenses = allowance * 0.3;
             const totalSpent = fixedExpenses + foodCost + transport + examPenalty;
             const savings = Math.max(0, allowance - totalSpent);
 
             document.getElementById('foodVal').innerText = foodOrders;
-            document.getElementById('m-spent').innerText = `₹${totalSpent.toLocaleString()}`;
+            document.getElementById('m-spent').innerText = `₹${Math.floor(totalSpent).toLocaleString()}`;
             document.getElementById('m-daily').innerText = `₹${Math.floor(Math.max(0, (allowance - fixedExpenses - transport)/30))}`;
             
-            const healthStatus = savings > (allowance * 0.15) ? "Healthy ✅" : "Critical ⚠️";
+            // DYNAMIC HEALTH CHECK
+            const isHealthy = savings > 0;
             const healthEl = document.getElementById('m-health');
-            healthEl.innerText = healthStatus;
-            healthEl.style.color = savings > (allowance * 0.15) ? "#34d399" : "#fb7185";
+            healthEl.innerText = isHealthy ? "Healthy ✅" : "Critical ⚠️";
+            healthEl.style.color = isHealthy ? "#34d399" : "#fb7185";
 
             const progress = Math.min(100, Math.floor((savings / (goalAmount/6)) * 100));
             document.getElementById('m-progress').innerText = `${progress}%`;
 
             let insightText = "";
             if(totalSpent > allowance) {
-                insightText = `<b>Alert:</b> Overspending by ₹${(totalSpent - allowance).toLocaleString()}. Reduce orders to ${Math.max(0, foodOrders-5)} to save ₹1,250.`;
+                insightText = `<b>Alert:</b> Budget Deficit! Fixed Costs (30%) + Lifestyle exceed allowance by ₹${Math.floor(totalSpent - allowance).toLocaleString()}.`;
             } else if(isExam) {
-                insightText = `<b>Exam Season:</b> ₹1,500 buffer added for late-night snacks. Avoid extra transport to stay on track.`;
+                insightText = `<b>Exam Season:</b> Buffer active. Avoid additional Swiggy orders to maintain your savings trend.`;
             } else {
-                insightText = `<b>Looking Good!</b> Monthly surplus: ₹${savings.toLocaleString()}. Goal reached in ${Math.ceil(goalAmount/Math.max(1, savings))} months.`;
+                insightText = `<b>In Control:</b> You are saving ₹${Math.floor(savings).toLocaleString()} monthly. Keep this pace!`;
             }
-            // Only update if optimizer didn't just write a message
+
             if(!document.querySelector('.animate-pulse')) {
                 document.getElementById('ai-insight').innerHTML = insightText;
             }
 
+            // CHART RENDERING
             const ctxD = document.getElementById('donutChart');
             const ctxB = document.getElementById('barChart');
 
             if (myD) myD.destroy();
             if (myB) myB.destroy();
 
-            const labels = ['Fixed', 'Food', 'Transport', 'Exam', 'Savings'];
+            const labels = ['Fixed (30%)', 'Food', 'Transport', 'Exam', 'Savings'];
             const dataValues = [fixedExpenses, foodCost, transport, examPenalty, savings];
 
             myD = new Chart(ctxD, {
@@ -274,7 +257,6 @@ function runAIOptimizer() {
                 }
             });
 
-            // DATA PERSISTENCE
             const userData = {
                 allowance: document.getElementById('allowance').value,
                 food: document.getElementById('foodFreq').value,
@@ -286,17 +268,16 @@ function runAIOptimizer() {
             localStorage.setItem('userFinancials', JSON.stringify(userData));
         }
 
-        // LOAD PERSISTED DATA
         window.addEventListener('DOMContentLoaded', () => {
             const saved = localStorage.getItem('userFinancials');
             if(saved) {
                 const data = JSON.parse(saved);
-                document.getElementById('allowance').value = data.allowance;
-                document.getElementById('foodFreq').value = data.food;
-                document.getElementById('isExam').checked = data.exam;
-                document.getElementById('transport').value = data.transport;
-                document.getElementById('goalName').value = data.goalName;
-                document.getElementById('goalAmount').value = data.goalAmount;
+                document.getElementById('allowance').value = data.allowance || 15000;
+                document.getElementById('foodFreq').value = data.food || 10;
+                document.getElementById('isExam').checked = data.exam || false;
+                document.getElementById('transport').value = data.transport || "0";
+                document.getElementById('goalName').value = data.goalName || "Savings Goal";
+                document.getElementById('goalAmount').value = data.goalAmount || 20000;
             }
             update();
         });
